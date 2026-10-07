@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Seed records: contain plain-text test-user passwords. Never commit.
+/data/
+!.env.example
