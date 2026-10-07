@@ -9,12 +9,30 @@ const fs = require("fs")
 const path = require("path")
 
 const root = path.resolve(__dirname, "..")
-if (!fs.existsSync(path.join(root, ".env"))) {
-  console.error(`[autosignup] Refusing to start: ${path.join(root, ".env")} is missing. Copy .env.example.`)
+const envFile = path.join(root, ".env")
+if (!fs.existsSync(envFile)) {
+  console.error(`[autosignup] Refusing to start: ${envFile} is missing. Copy .env.example.`)
   process.exit(1)
 }
 if (!fs.existsSync(path.join(root, ".next", "BUILD_ID"))) {
   console.error("[autosignup] Refusing to start: run `npm run build` first.")
+  process.exit(1)
+}
+
+// Next reads .env itself at runtime; only the listen address is needed here.
+const env = Object.fromEntries(
+  fs
+    .readFileSync(envFile, "utf8")
+    .split(/\r?\n/)
+    .map((l) => /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(l))
+    .filter(Boolean)
+    .map((m) => [m[1], m[2].replace(/^(['"])(.*)\1$/, "$2")]),
+)
+// 127.0.0.1 = SSH tunnel only. 172.17.0.1 = also reachable from Docker
+// (Nginx Proxy Manager) but not from the internet.
+const bind = env.AUTOSIGNUP_BIND || "127.0.0.1"
+if (bind === "0.0.0.0" || bind === "::") {
+  console.error("[autosignup] Refusing to listen on all interfaces. Use 127.0.0.1 or the Docker bridge IP (172.17.0.1).")
   process.exit(1)
 }
 
@@ -24,8 +42,7 @@ module.exports = {
       name: "autosignup",
       cwd: root,
       script: "node_modules/next/dist/bin/next",
-      // Localhost only. Reach it with: ssh -N -L 3003:127.0.0.1:3003 <prod-host>
-      args: "start -H 127.0.0.1 -p 3003",
+      args: `start -H ${bind} -p 3003`,
       exec_mode: "fork",
       instances: 1,
       autorestart: true,

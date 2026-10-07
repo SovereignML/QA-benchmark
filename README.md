@@ -58,14 +58,31 @@ pm2 start deploy/pm2.config.cjs && pm2 save
 #       (create the `autosignup` user and chown /opt/autosignup + /var/lib/autosignup to it first)
 ```
 
-Open it from your laptop:
+### Reaching it
+
+**Option A — SSH tunnel (default, nothing exposed):**
 
 ```bash
 ssh -N -L 3003:127.0.0.1:3003 <prod-host>      # then browse http://127.0.0.1:3003
 ```
 
-It is never exposed publicly: it binds to 127.0.0.1 and refuses requests whose
-Host isn't localhost, plus cross-origin POSTs.
+**Option B — a subdomain through Nginx Proxy Manager** (e.g. `qa.atlasagents.dev`).
+In `.env`:
+
+```bash
+AUTOSIGNUP_BIND=172.17.0.1                 # Docker bridge: NPM can reach it, the internet can't
+AUTOSIGNUP_PUBLIC_HOST=qa.atlasagents.dev
+AUTOSIGNUP_BASIC_AUTH=qa:<long random password>   # required — public host is refused without it
+```
+
+Then `pm2 delete autosignup && pm2 start deploy/pm2.config.cjs && pm2 save`
+(the listen address is read when pm2 starts the app). In NPM add a Proxy Host:
+domain `qa.atlasagents.dev`, scheme `http`, forward host `172.17.0.1`, port
+`3003`, SSL on. Never open port 3003 in the cloud firewall.
+
+Every request (page, API, assets) goes through `src/proxy.ts`: only localhost
+or `AUTOSIGNUP_PUBLIC_HOST` are served, the password applies on every host
+once set, and cross-origin writes are refused.
 
 **Run exactly one process** (pm2 fork mode, 1 instance). The scheduler and the
 record files assume a single writer.

@@ -1,16 +1,24 @@
 import { NextResponse } from "next/server"
+import { checkAccess } from "./access"
 
-// The server binds to 127.0.0.1, but a page on some other site open in the
-// same browser could still POST to it. Reject any request whose Origin isn't
-// this app.
+// Second line of defence behind src/proxy.ts (same rules), plus: refuse
+// cross-origin writes, so a page on another site open in the same browser
+// can't drive this API with the operator's credentials.
 export function guard(req: Request): NextResponse | null {
+  const r = checkAccess(req.headers.get("host"), req.headers.get("authorization"))
+  if (!r.ok) return NextResponse.json({ error: r.message }, { status: r.status })
   const host = req.headers.get("host") ?? ""
-  if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host)) {
-    return NextResponse.json({ error: "Local use only." }, { status: 403 })
-  }
   const origin = req.headers.get("origin")
-  if (req.method !== "GET" && origin && new URL(origin).host !== host) {
-    return NextResponse.json({ error: "Cross-origin request refused." }, { status: 403 })
+  if (req.method !== "GET" && origin) {
+    let originHost = ""
+    try {
+      originHost = new URL(origin).host
+    } catch {}
+    // Behind a TLS-terminating proxy the browser says https://qa…, the
+    // proxied Host may carry :443 or nothing — compare hostnames only.
+    if (originHost.replace(/:\d+$/, "") !== host.replace(/:\d+$/, "")) {
+      return NextResponse.json({ error: "Cross-origin request refused." }, { status: 403 })
+    }
   }
   return null
 }

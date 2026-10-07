@@ -17,10 +17,11 @@ Type=simple
 User=autosignup
 Group=autosignup
 WorkingDirectory=/opt/autosignup
+EnvironmentFile=/opt/autosignup/.env
 Environment=NODE_ENV=production
 Environment=NEXT_TELEMETRY_DISABLED=1
-; Localhost only. Reach it with: ssh -N -L 3003:127.0.0.1:3003 <prod-host>
-ExecStart=/usr/bin/env node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3003
+; Listens on AUTOSIGNUP_BIND from .env (must be set there: 127.0.0.1 or 172.17.0.1).
+ExecStart=/usr/bin/env node node_modules/next/dist/bin/next start -H ${AUTOSIGNUP_BIND} -p 3003
 Restart=on-failure
 RestartSec=5
 KillSignal=SIGTERM
