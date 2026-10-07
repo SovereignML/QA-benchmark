@@ -1,9 +1,4 @@
-# AutoSignUp
-
-QA tool that schedules **test signups straight into the production Atlas Agents
-database** (`app.atlasagents.dev`). Each account is written exactly as the real
-signup form leaves it, minus the email, PostHog and ad-conversion side effects,
-and AutoSignUp keeps a full record of every user it creates.
+# QA-Bench
 
 Standalone: own repo, own `package.json`, never imports from `atlasagents-app`.
 Runs on the prod server next to the app, bound to **127.0.0.1:3003**.
