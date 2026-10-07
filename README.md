@@ -48,7 +48,7 @@ can never start a billed VM. Set it blank in the form for the platform default.
 # 1. Code
 sudo mkdir -p /opt/autosignup /var/lib/autosignup
 sudo chown -R $USER /opt/autosignup /var/lib/autosignup && chmod 700 /var/lib/autosignup
-git clone <this repo> /opt/autosignup          # or rsync the folder
+git clone https://github.com/SovereignML/QA-benchmark.git /opt/autosignup
 cd /opt/autosignup && npm ci && npm run build
 
 # 2. Least-privilege DB role (recommended)
